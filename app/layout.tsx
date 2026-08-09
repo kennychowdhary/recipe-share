@@ -35,7 +35,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
                 Browse recipes
               </Link>
               <Link href="/plan" className="hover:text-foreground">
-                Plan a week
+                Meal calendar
               </Link>
               <Link
                 href="/submit"

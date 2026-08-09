@@ -20,7 +20,29 @@ export type Recipe = {
   author: string;
 };
 
-export const COURSES = ["Breakfast", "Lunch", "Dinner", "Dessert", "Snack"] as const;
+export const COURSES = [
+  "Breakfast",
+  "Lunch",
+  "Dinner",
+  "Dessert",
+  "Snack",
+  "Drinks",
+] as const;
+
+export const COURSE_ICONS: Record<string, string> = {
+  Breakfast: "🍳",
+  Lunch: "🥪",
+  Dinner: "🍽️",
+  Dessert: "🍰",
+  Snack: "🍿",
+  Drinks: "🍹",
+};
+
+/** "Dinner" → "🍽️ Dinner"; unknown courses pass through untouched. */
+export function courseLabel(course: string): string {
+  const icon = COURSE_ICONS[course];
+  return icon ? `${icon} ${course}` : course;
+}
 
 export const DIETARY_TAGS = [
   "Vegetarian",

@@ -67,7 +67,126 @@ Split ingredient lines into quantity, unit, and name: "2 tbsp olive oil" becomes
 
 Write steps as one action each, in order, without step numbers or bullet markers.
 
-Apply a dietary tag only when the ingredient list clearly supports it — no meat, fish, or dairy for Vegan; no wheat, barley, or rye for Gluten-free.`;
+Apply a dietary tag only when the ingredient list clearly supports it — no meat, fish, or dairy for Vegan; no wheat, barley, or rye for Gluten-free.
+
+When the input is a recipe web page (structured data plus page text), take names, amounts, and steps from the structured data — every ingredient must keep its amount. Use the page text for what the structured data misses: headnote tips, substitutions, variations, and author edits or reader-tested tweaks belong in notes. Ignore navigation, ads, comments, and unrelated links.`;
+
+/** Pull <script type="application/ld+json"> Recipe objects — the structured
+ * data most recipe sites embed for search engines. Far more reliable than
+ * scraping the visible page. */
+function extractRecipeJsonLd(html: string): string | null {
+  const scripts = html.matchAll(
+    /<script[^>]*type\s*=\s*["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi,
+  );
+  for (const [, body] of scripts) {
+    try {
+      const parsed = JSON.parse(body);
+      const nodes = [parsed, ...(Array.isArray(parsed) ? parsed : []), ...(parsed["@graph"] ?? [])];
+      for (const node of nodes) {
+        const type = node?.["@type"];
+        if (type === "Recipe" || (Array.isArray(type) && type.includes("Recipe"))) {
+          // Keep only the fields that matter; some sites embed huge review lists.
+          const keep = [
+            "name", "recipeYield", "prepTime", "cookTime", "totalTime",
+            "recipeIngredient", "recipeInstructions", "recipeCuisine",
+            "recipeCategory", "description", "keywords",
+          ];
+          return JSON.stringify(
+            Object.fromEntries(keep.filter((k) => k in node).map((k) => [k, node[k]])),
+          );
+        }
+      }
+    } catch {
+      // Malformed JSON-LD is common; keep looking.
+    }
+  }
+  return null;
+}
+
+/** Crude but dependency-free: drop scripts/styles/tags, keep the words. */
+function htmlToText(html: string): string {
+  return html
+    .replace(/<(script|style|noscript|svg|header|footer|nav)[\s\S]*?<\/\1>/gi, " ")
+    .replace(/<[^>]+>/g, "\n")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&#?\w+;/g, " ")
+    .replace(/[ \t]+/g, " ")
+    .replace(/\n\s*\n+/g, "\n")
+    .trim();
+}
+
+async function fetchRecipeFromUrl(rawUrl: string): Promise<string> {
+  let url: URL;
+  try {
+    url = new URL(rawUrl);
+  } catch {
+    throw new Error("That doesn't look like a valid link.");
+  }
+  // Server-side fetch of a user-supplied URL: refuse anything that isn't
+  // plain public http(s) so the route can't be pointed at internal services.
+  if (url.protocol !== "https:" && url.protocol !== "http:") {
+    throw new Error("Only http(s) links are supported.");
+  }
+  const host = url.hostname.toLowerCase();
+  if (
+    host === "localhost" ||
+    host.endsWith(".local") ||
+    host.endsWith(".internal") ||
+    /^(\d{1,3}\.){3}\d{1,3}$/.test(host) ||
+    host.includes(":")
+  ) {
+    throw new Error("That link points somewhere this site can't fetch from.");
+  }
+
+  let response: Response | null = null;
+  try {
+    response = await fetch(url, {
+      headers: {
+        // Recipe sites often refuse requests with no browser-like UA.
+        "User-Agent":
+          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36",
+        Accept: "text/html",
+      },
+      signal: AbortSignal.timeout(15000),
+      redirect: "follow",
+    });
+  } catch {
+    // Network-level failure: fall through to the reader proxy below.
+  }
+
+  if (response?.ok) {
+    const html = (await response.text()).slice(0, 3_000_000);
+    const jsonLd = extractRecipeJsonLd(html);
+    const pageText = htmlToText(html).slice(0, 15000);
+    return [
+      `Recipe page: ${url.href}`,
+      jsonLd ? `Structured recipe data from the page:\n${jsonLd}` : "",
+      `Visible page text (may include headnotes, tips, and variations worth capturing in the notes):\n${pageText}`,
+    ]
+      .filter(Boolean)
+      .join("\n\n");
+  }
+
+  // Big recipe publishers bot-block datacenter IPs (Serious Eats answers 402).
+  // Jina's public reader fetches the page from friendlier infrastructure and
+  // returns clean markdown. Only the recipe URL is shared with it.
+  const proxied = await fetch(`https://r.jina.ai/${url.href}`, {
+    headers: { Accept: "text/plain" },
+    signal: AbortSignal.timeout(30000),
+  });
+  if (!proxied.ok) {
+    throw new Error(
+      `That site wouldn't let us read the page (HTTP ${response?.status ?? "blocked"}) — copy the recipe text and paste it instead.`,
+    );
+  }
+  const markdown = (await proxied.text()).slice(0, 20000);
+  return `Recipe page: ${url.href}\n\nPage content (markdown; may include headnotes, tips, and variations worth capturing in the notes):\n${markdown}`;
+}
+
+function looksLikeUrl(s: string): boolean {
+  return /^https?:\/\/\S+$/i.test(s.trim()) && !s.trim().includes("\n");
+}
 
 export async function POST(request: Request) {
   if (!process.env.ANTHROPIC_API_KEY) {
@@ -92,6 +211,18 @@ export async function POST(request: Request) {
       { error: "That recipe is too long — trim it to under 20,000 characters." },
       { status: 400 },
     );
+  }
+
+  // A bare link means "go get it" — fetch the page and parse that instead.
+  if (looksLikeUrl(text)) {
+    try {
+      text = await fetchRecipeFromUrl(text.trim());
+    } catch (error) {
+      return Response.json(
+        { error: error instanceof Error ? error.message : "Couldn't fetch that link." },
+        { status: 422 },
+      );
+    }
   }
 
   const client = new Anthropic();

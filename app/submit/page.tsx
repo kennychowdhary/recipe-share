@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { COURSES, DIETARY_TAGS, type Ingredient } from "@/lib/types";
+import { COURSES, DIETARY_TAGS, courseLabel, type Ingredient } from "@/lib/types";
 
 const STEP_LABELS = ["The dish", "Ingredients", "Steps", "Extras", "Review"];
 
@@ -137,18 +137,19 @@ export default function SubmitPage() {
             ✨ Skip the typing
           </span>
           <h1 className="mt-4 font-serif text-3xl font-semibold">
-            Paste your recipe
+            Paste your recipe — or a link to one
           </h1>
           <p className="mt-2 text-muted">
-            However it&apos;s written — a text from a friend, a screenshot
-            transcript, scrawled notes. We&apos;ll sort it into ingredients and
-            steps, and you can fix anything we get wrong.
+            However it&apos;s written — a text from a friend, scrawled notes,
+            or a URL from your favorite recipe site. We&apos;ll fetch it, sort
+            it into ingredients and steps, and you can fix anything we get
+            wrong.
           </p>
 
           <textarea
             className={`${inputClass} mt-6 min-h-56`}
             placeholder={
-              "e.g. Grandma's roast chicken. Serves 6.\n\n4 lb chicken, a head of garlic, 2 lemons, 3 tbsp butter…\n\nHeat oven to 425. Pat the chicken dry — that's the secret to crispy skin…"
+              "e.g. https://www.seriouseats.com/olive-oil-cake-recipe\n\nor: Grandma's roast chicken. Serves 6.\n4 lb chicken, a head of garlic, 2 lemons, 3 tbsp butter…\nHeat oven to 425. Pat the chicken dry — that's the secret to crispy skin…"
             }
             value={pastedText}
             onChange={(e) => setPastedText(e.target.value)}
@@ -172,8 +173,30 @@ export default function SubmitPage() {
               type="button"
               onClick={parsePasted}
               disabled={parsing || !pastedText.trim()}
-              className="rounded-lg bg-accent px-5 py-2.5 text-sm font-medium text-background hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-40"
+              className="inline-flex items-center gap-2.5 rounded-lg bg-accent px-5 py-2.5 text-sm font-medium text-background hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-70"
             >
+              {parsing && (
+                <svg
+                  className="h-4 w-4 animate-spin"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  aria-hidden
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-90"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                  />
+                </svg>
+              )}
               {parsing ? "Reading your recipe…" : "Sort it out for me →"}
             </button>
           </div>
@@ -265,7 +288,7 @@ export default function SubmitPage() {
                           : "border border-border text-muted hover:border-muted"
                       }`}
                     >
-                      {c}
+                      {courseLabel(c)}
                     </button>
                   ))}
                 </div>
@@ -476,7 +499,7 @@ export default function SubmitPage() {
             <div className="mt-8 space-y-4 text-sm">
               <div className="rounded-lg border border-border p-4">
                 <div className="text-muted">
-                  {cuisine || "—"} · {course}
+                  {cuisine || "—"} · {courseLabel(course)}
                   {author ? ` · by ${author}` : ""}
                 </div>
                 <div className="mt-1 font-serif text-xl font-semibold">

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getSupabase } from "@/lib/supabase";
-import type { Recipe } from "@/lib/types";
+import { courseLabel, type Recipe } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -28,7 +28,7 @@ export default async function RecipePage({
       </Link>
 
       <div className="mt-6 text-sm text-muted">
-        {r.cuisine} · {r.course}
+        {[r.cuisine, courseLabel(r.course)].filter(Boolean).join(" · ")}
         {r.author ? ` · by ${r.author}` : ""}
       </div>
       <h1 className="mt-2 font-serif text-4xl font-semibold">{r.name}</h1>

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import type { Recipe } from "@/lib/types";
+import { courseLabel, type Recipe } from "@/lib/types";
 import { encodePicks } from "@/lib/grocery";
 
 export default function RecipeGrid({ recipes }: { recipes: Recipe[] }) {
@@ -60,7 +60,7 @@ export default function RecipeGrid({ recipes }: { recipes: Recipe[] }) {
             <>
               <div className="flex items-start justify-between gap-2">
                 <div className="text-sm text-muted">
-                  {r.cuisine} · {r.course}
+                  {[r.cuisine, courseLabel(r.course)].filter(Boolean).join(" · ")}
                 </div>
                 {selecting && (
                   <span
