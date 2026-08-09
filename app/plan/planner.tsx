@@ -19,12 +19,12 @@ function isoDate(d: Date): string {
   ).padStart(2, "0")}`;
 }
 
-/** Weeks (Mon–Sun) covering the given month; days outside it are included
+/** Weeks (Sun–Sat) covering the given month; days outside it are included
  * so the grid stays rectangular, and flagged via `inMonth`. */
 function monthGrid(year: number, month: number) {
   const first = new Date(year, month, 1);
   const start = new Date(first);
-  start.setDate(first.getDate() - ((first.getDay() + 6) % 7)); // back to Monday
+  start.setDate(first.getDate() - first.getDay()); // back to Sunday
 
   const weeks: { date: Date; inMonth: boolean }[][] = [];
   const cursor = new Date(start);
@@ -140,7 +140,7 @@ export default function Planner({ recipes }: { recipes: Recipe[] }) {
       </div>
 
       <div className="mt-8 hidden grid-cols-[repeat(7,1fr)_auto] gap-2 text-xs font-medium text-muted sm:grid">
-        {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => (
+        {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
           <div key={d} className="px-2">
             {d}
           </div>
