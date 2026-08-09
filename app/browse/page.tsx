@@ -1,6 +1,6 @@
-import Link from "next/link";
 import { getSupabase } from "@/lib/supabase";
 import type { Recipe } from "@/lib/types";
+import RecipeGrid from "./grid";
 
 export const dynamic = "force-dynamic";
 
@@ -43,37 +43,7 @@ export default async function BrowsePage() {
           ? "Nothing here yet — be the first to share one."
           : `${recipes.length} recipe${recipes.length === 1 ? "" : "s"} and counting.`}
       </p>
-
-      <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {(recipes as Recipe[]).map((r) => (
-          <Link
-            key={r.id}
-            href={`/recipes/${r.id}`}
-            className="rounded-2xl border border-border bg-card p-6 transition hover:border-muted"
-          >
-            <div className="text-sm text-muted">
-              {r.cuisine} · {r.course}
-            </div>
-            <h2 className="mt-2 font-serif text-xl font-semibold">{r.name}</h2>
-            <div className="mt-3 text-sm text-muted">
-              {r.prep_minutes + r.cook_minutes} min · serves {r.servings}
-              {r.author ? ` · by ${r.author}` : ""}
-            </div>
-            {r.tags?.length > 0 && (
-              <div className="mt-4 flex flex-wrap gap-2">
-                {r.tags.map((t) => (
-                  <span
-                    key={t}
-                    className="rounded-full bg-pill px-3 py-1 text-xs text-pill-fg"
-                  >
-                    {t}
-                  </span>
-                ))}
-              </div>
-            )}
-          </Link>
-        ))}
-      </div>
+      {recipes.length > 0 && <RecipeGrid recipes={recipes as Recipe[]} />}
     </div>
   );
 }

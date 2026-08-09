@@ -34,6 +34,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
               <Link href="/browse" className="hover:text-foreground">
                 Browse recipes
               </Link>
+              <Link href="/plan" className="hover:text-foreground">
+                Plan a week
+              </Link>
               <Link
                 href="/submit"
                 className="rounded-lg bg-accent px-4 py-2 font-medium text-background hover:bg-accent-strong"
