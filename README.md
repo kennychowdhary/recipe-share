@@ -27,6 +27,23 @@ publishing are disabled with a friendly notice.
 The anon key is safe to expose to browsers: row-level security only allows
 reading and inserting recipes, never editing or deleting.
 
+## Recipe parsing with Claude (optional)
+
+The first screen of the share flow lets you paste a recipe in any format and
+have Claude sort it into the structured fields. Set `ANTHROPIC_API_KEY` in
+`.env.local` to enable it; without it the wizard still works, you just type the
+fields yourself.
+
+**The key must never carry a `NEXT_PUBLIC_` prefix.** That prefix is what tells
+Next.js to inline a value into the browser bundle — the Supabase anon key is
+meant to be public, an Anthropic key is not. Parsing happens in
+[`app/api/parse-recipe/route.ts`](app/api/parse-recipe/route.ts), which runs
+only on the server.
+
+If you're going through a gateway rather than `api.anthropic.com`, set
+`ANTHROPIC_BASE_URL` and `ANTHROPIC_MODEL` — gateways namespace model IDs
+(e.g. `azure/anthropic/claude-opus-5`).
+
 ## Deploying to Vercel (free tier)
 
 1. Push this repo to GitHub.

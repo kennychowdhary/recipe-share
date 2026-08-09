@@ -9,11 +9,29 @@ const STEP_LABELS = ["The dish", "Ingredients", "Steps", "Extras", "Review"];
 const inputClass =
   "w-full rounded-lg border border-border bg-background px-4 py-3 placeholder:text-muted/60 focus:border-accent focus:outline-none";
 
+type ParsedRecipe = {
+  name: string;
+  cuisine: string;
+  course: string;
+  servings: number;
+  prep_minutes: number;
+  cook_minutes: number;
+  ingredients: Ingredient[];
+  steps: string[];
+  tags: string[];
+  notes: string;
+};
+
 export default function SubmitPage() {
   const router = useRouter();
   const [step, setStep] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const [showPaste, setShowPaste] = useState(true);
+  const [pastedText, setPastedText] = useState("");
+  const [parsing, setParsing] = useState(false);
+  const [parseError, setParseError] = useState<string | null>(null);
 
   const [name, setName] = useState("");
   const [cuisine, setCuisine] = useState("");
@@ -41,6 +59,39 @@ export default function SubmitPage() {
     true,
     true,
   ][step];
+
+  async function parsePasted() {
+    setParsing(true);
+    setParseError(null);
+    const res = await fetch("/api/parse-recipe", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text: pastedText }),
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => null);
+      setParseError(body?.error ?? `Couldn't read that (HTTP ${res.status}).`);
+      setParsing(false);
+      return;
+    }
+
+    const r: ParsedRecipe = await res.json();
+    setName(r.name ?? "");
+    setCuisine(r.cuisine ?? "");
+    if (COURSES.includes(r.course as (typeof COURSES)[number])) setCourse(r.course);
+    setServings(String(r.servings || 4));
+    setPrepMinutes(String(r.prep_minutes ?? ""));
+    setCookMinutes(String(r.cook_minutes ?? ""));
+    if (r.ingredients?.length) setIngredients(r.ingredients);
+    if (r.steps?.length) setSteps(r.steps);
+    setTags(
+      (r.tags ?? []).filter((t) => DIETARY_TAGS.includes(t as (typeof DIETARY_TAGS)[number])),
+    );
+    setNotes(r.notes ?? "");
+
+    setParsing(false);
+    setShowPaste(false);
+  }
 
   function updateIngredient(i: number, field: keyof Ingredient, value: string) {
     setIngredients((prev) =>
@@ -76,6 +127,59 @@ export default function SubmitPage() {
       setError(body?.error ?? `Something went wrong (HTTP ${res.status}).`);
       setSubmitting(false);
     }
+  }
+
+  if (showPaste) {
+    return (
+      <div className="mx-auto w-full max-w-2xl px-6 py-12">
+        <div className="rounded-2xl border border-border bg-card p-8">
+          <span className="inline-flex items-center gap-2 rounded-full bg-pill px-3 py-1 text-xs text-pill-fg">
+            ✨ Skip the typing
+          </span>
+          <h1 className="mt-4 font-serif text-3xl font-semibold">
+            Paste your recipe
+          </h1>
+          <p className="mt-2 text-muted">
+            However it&apos;s written — a text from a friend, a screenshot
+            transcript, scrawled notes. We&apos;ll sort it into ingredients and
+            steps, and you can fix anything we get wrong.
+          </p>
+
+          <textarea
+            className={`${inputClass} mt-6 min-h-56`}
+            placeholder={
+              "e.g. Grandma's roast chicken. Serves 6.\n\n4 lb chicken, a head of garlic, 2 lemons, 3 tbsp butter…\n\nHeat oven to 425. Pat the chicken dry — that's the secret to crispy skin…"
+            }
+            value={pastedText}
+            onChange={(e) => setPastedText(e.target.value)}
+          />
+
+          {parseError && (
+            <p className="mt-4 rounded-lg border border-red-900 bg-red-950/40 p-3 text-sm text-red-300">
+              {parseError}
+            </p>
+          )}
+
+          <div className="mt-6 flex items-center justify-between">
+            <button
+              type="button"
+              onClick={() => setShowPaste(false)}
+              className="text-sm text-muted hover:text-foreground"
+            >
+              I&apos;d rather type it in myself
+            </button>
+            <button
+              type="button"
+              onClick={parsePasted}
+              disabled={parsing || !pastedText.trim()}
+              className="rounded-lg bg-accent px-5 py-2.5 text-sm font-medium text-background hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              {parsing ? "Reading your recipe…" : "Sort it out for me →"}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
