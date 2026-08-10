@@ -35,9 +35,17 @@ export default async function RecipePage({
 
   return (
     <div className="mx-auto w-full max-w-3xl px-6 py-16">
-      <Link href="/browse" className="text-sm text-muted hover:text-foreground">
-        ← All recipes
-      </Link>
+      <div className="flex items-center justify-between">
+        <Link href="/browse" className="text-sm text-muted hover:text-foreground">
+          ← All recipes
+        </Link>
+        <Link
+          href={`/recipes/${r.id}/edit`}
+          className="rounded-lg border border-border px-4 py-2 text-sm text-muted hover:border-muted hover:text-foreground"
+        >
+          ✏️ Edit
+        </Link>
+      </div>
 
       <div className="mt-6 text-sm text-muted">
         {[r.cuisine, courseLabel(r.course)].filter(Boolean).join(" · ")}

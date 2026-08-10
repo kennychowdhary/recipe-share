@@ -16,7 +16,9 @@ create table if not exists recipes (
   author text not null default ''
 );
 
--- Anyone can read and submit recipes; nobody can edit or delete via the anon key.
+-- Wiki-style access: anyone can read, add, edit, and delete recipes. There is
+-- no undo, so anyone with the site URL can remove a recipe permanently. Drop
+-- the update and delete policies below to go back to read-and-add-only.
 alter table recipes enable row level security;
 
 create policy "public read" on recipes
@@ -24,3 +26,9 @@ create policy "public read" on recipes
 
 create policy "public insert" on recipes
   for insert with check (true);
+
+create policy "public update" on recipes
+  for update using (true) with check (true);
+
+create policy "public delete" on recipes
+  for delete using (true);

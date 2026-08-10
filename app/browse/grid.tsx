@@ -3,13 +3,28 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { courseLabel, type Recipe } from "@/lib/types";
+import { COURSES, courseLabel, type Recipe } from "@/lib/types";
 import { encodePicks } from "@/lib/grocery";
+
+/** Group into course sections in menu order, with anything uncategorized
+ * last. Empty courses are dropped. */
+function byCourse(recipes: Recipe[]): [string, Recipe[]][] {
+  const groups = new Map<string, Recipe[]>();
+  for (const r of recipes) {
+    const key = (COURSES as readonly string[]).includes(r.course) ? r.course : "Other";
+    groups.set(key, [...(groups.get(key) ?? []), r]);
+  }
+  const order = [...COURSES, "Other"];
+  return order
+    .filter((c) => groups.has(c))
+    .map((c) => [c, groups.get(c)!] as [string, Recipe[]]);
+}
 
 export default function RecipeGrid({ recipes }: { recipes: Recipe[] }) {
   const router = useRouter();
   const [selecting, setSelecting] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const sections = byCourse(recipes);
 
   function toggle(id: string) {
     setSelected((prev) => {
@@ -54,13 +69,24 @@ export default function RecipeGrid({ recipes }: { recipes: Recipe[] }) {
         )}
       </div>
 
-      <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {recipes.map((r) => {
+      {sections.map(([sectionCourse, sectionRecipes]) => (
+        <section key={sectionCourse} className="mt-12 first:mt-8">
+          <div className="flex items-baseline gap-3 border-b border-border pb-2">
+            <h2 className="font-serif text-2xl font-semibold">
+              {sectionCourse === "Other" ? "Everything else" : courseLabel(sectionCourse)}
+            </h2>
+            <span className="text-sm text-muted">
+              {sectionRecipes.length} recipe{sectionRecipes.length === 1 ? "" : "s"}
+            </span>
+          </div>
+          <div className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {sectionRecipes.map((r) => {
           const card = (
             <>
               <div className="flex items-start justify-between gap-2">
                 <div className="text-sm text-muted">
-                  {[r.cuisine, courseLabel(r.course)].filter(Boolean).join(" · ")}
+                  {/* Course is the section heading already — show cuisine only. */}
+                  {r.cuisine}
                 </div>
                 {selecting && (
                   <span
@@ -102,22 +128,24 @@ export default function RecipeGrid({ recipes }: { recipes: Recipe[] }) {
               : "border-border hover:border-muted"
           }`;
 
-          return selecting ? (
-            <button
-              key={r.id}
-              type="button"
-              onClick={() => toggle(r.id)}
-              className={`${cardClass} cursor-pointer text-left`}
-            >
-              {card}
-            </button>
-          ) : (
-            <Link key={r.id} href={`/recipes/${r.id}`} className={cardClass}>
-              {card}
-            </Link>
-          );
-        })}
-      </div>
+              return selecting ? (
+                <button
+                  key={r.id}
+                  type="button"
+                  onClick={() => toggle(r.id)}
+                  className={`${cardClass} cursor-pointer text-left`}
+                >
+                  {card}
+                </button>
+              ) : (
+                <Link key={r.id} href={`/recipes/${r.id}`} className={cardClass}>
+                  {card}
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+      ))}
     </>
   );
 }
