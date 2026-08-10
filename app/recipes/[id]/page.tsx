@@ -7,6 +7,16 @@ import { courseLabel, type Recipe } from "@/lib/types";
 // just-published recipe still shows instantly after the redirect.
 export const revalidate = 300;
 
+// Pre-render every known recipe at build time. Pre-built pages get
+// prefetched as their cards scroll into view on /browse, which is what
+// makes clicking a recipe feel instant.
+export async function generateStaticParams() {
+  const supabase = getSupabase();
+  if (!supabase) return [];
+  const { data } = await supabase.from("recipes").select("id").limit(500);
+  return (data ?? []).map(({ id }) => ({ id: String(id) }));
+}
+
 export default async function RecipePage({
   params,
 }: PageProps<"/recipes/[id]">) {
