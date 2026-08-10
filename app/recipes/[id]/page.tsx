@@ -67,14 +67,15 @@ export default async function RecipePage({
       <section className="mt-10 rounded-2xl border border-border bg-card p-8">
         <h2 className="font-serif text-2xl font-semibold">Ingredients</h2>
         <ul className="mt-4 space-y-2">
-          {r.ingredients.map((ing, i) => (
-            <li key={i} className="flex gap-3">
-              <span className="w-24 shrink-0 text-muted">
-                {ing.quantity} {ing.unit}
-              </span>
-              <span>{ing.name}</span>
-            </li>
-          ))}
+          {r.ingredients.map((ing, i) => {
+            const amount = [ing.quantity, ing.unit].filter(Boolean).join(" ");
+            return (
+              <li key={i} className="leading-relaxed">
+                {amount && <span className="font-medium">{amount} </span>}
+                {ing.name}
+              </li>
+            );
+          })}
         </ul>
       </section>
 
