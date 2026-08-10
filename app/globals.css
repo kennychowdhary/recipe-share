@@ -1,16 +1,17 @@
 @import "tailwindcss";
 
 :root {
-  /* Warm espresso base — dark, but lit like a kitchen, not a void. */
-  --background: #211913;
-  --foreground: #f2ebe0;
-  --muted: #b3a48f;
-  --card: #2b2118;
-  --border: #40331f;
-  --accent: #a5b4fc;
-  --accent-strong: #c7d2fe;
-  --pill: #2b3320;
-  --pill-fg: #c3d8ae;
+  /* Near-white base with a garden-green accent. Cards are pure white and
+   * separate from the page by hairline borders. */
+  --background: #fdfdfc;
+  --foreground: #1e1e1c;
+  --muted: #6b6b66;
+  --card: #ffffff;
+  --border: #e7e7e3;
+  --accent: #2e7d4f;
+  --accent-strong: #256841;
+  --pill: #e7f3ec;
+  --pill-fg: #1f5637;
 }
 
 @theme inline {
@@ -28,21 +29,52 @@
 }
 
 body {
-  /* Every page gets a hint of the kitchen glow; the home hero layers more on top. */
+  /* A whisper of green and lemon so pages aren't clinical; barely-there. */
   background:
-    radial-gradient(90rem 42rem at 12% -12%, rgba(233, 116, 81, 0.08), transparent 60%),
-    radial-gradient(80rem 44rem at 108% 18%, rgba(240, 178, 76, 0.06), transparent 60%),
+    radial-gradient(90rem 42rem at 12% -12%, rgba(46, 125, 79, 0.05), transparent 60%),
+    radial-gradient(80rem 44rem at 108% 18%, rgba(217, 165, 20, 0.04), transparent 60%),
     var(--background);
   color: var(--foreground);
   font-family: var(--font-geist-sans), sans-serif;
 }
 
-/* Slow drift for the home-page food scatter. */
-@keyframes food-float {
-  0%, 100% {
-    transform: translateY(0) rotate(var(--tilt, 0deg));
+/* The home-page farm scene: produce sinking in slow motion, herbs on a
+ * diagonal breeze, clouds crossing the sky, wheat swaying on the hills. */
+@keyframes farm-fall {
+  from {
+    top: -8%;
+    transform: rotate(0deg);
+  }
+  to {
+    top: 108%;
+    transform: rotate(35deg);
+  }
+}
+
+@keyframes farm-drift {
+  from {
+    transform: translate(-6vw, -8vh) rotate(-10deg);
+  }
+  to {
+    transform: translate(106vw, 52vh) rotate(14deg);
+  }
+}
+
+@keyframes farm-cloud {
+  from {
+    transform: translateX(-12vw);
+  }
+  to {
+    transform: translateX(106vw);
+  }
+}
+
+@keyframes farm-sway {
+  0%,
+  100% {
+    transform: rotate(-5deg);
   }
   50% {
-    transform: translateY(-14px) rotate(var(--tilt, 0deg));
+    transform: rotate(5deg);
   }
 }

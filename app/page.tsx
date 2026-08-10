@@ -1,64 +1,122 @@
 import Link from "next/link";
+import {
+  IconApple,
+  IconCarrot,
+  IconCherry,
+  IconCloud,
+  IconLeaf,
+  IconLemon2,
+  IconPlant,
+  IconSeeding,
+  IconSun,
+  IconWheat,
+} from "@tabler/icons-react";
 
-// Fixed layout (not random) so the server and browser render identically.
-// left/top in %, size in rem, tilt in degrees, drift duration in seconds.
-const SCATTER: [number, number, number, number, number, string][] = [
-  [4, 8, 3.2, -12, 11, "🍋"],
-  [12, 78, 2.6, 8, 13, "🥑"],
-  [7, 42, 2.2, -6, 9, "🍅"],
-  [16, 16, 2.0, 14, 12, "🧄"],
-  [24, 66, 2.4, -10, 10, "🌶️"],
-  [21, 34, 1.8, 6, 14, "🍤"],
-  [31, 12, 2.8, -4, 12, "🥖"],
-  [36, 80, 2.1, 12, 9, "🍇"],
-  [42, 30, 1.9, -14, 13, "🧀"],
-  [47, 68, 2.5, 6, 11, "🍑"],
-  [54, 10, 2.3, -8, 10, "🥕"],
-  [58, 44, 1.8, 10, 14, "🌿"],
-  [63, 76, 3.0, -6, 12, "🍜"],
-  [69, 24, 2.2, 12, 9, "🍓"],
-  [74, 58, 2.0, -12, 13, "🥟"],
-  [79, 6, 2.6, 8, 11, "🫒"],
-  [83, 40, 2.4, -6, 10, "🍊"],
-  [88, 72, 3.1, 10, 12, "🥧"],
-  [92, 20, 2.2, -10, 14, "🧅"],
-  [95, 52, 1.9, 6, 9, "🍒"],
+// Falling produce: [left %, size px, color, duration s, phase 0–1]
+const FALLERS = [
+  { Icon: IconCarrot, left: 10, size: 30, color: "#639922", duration: 21, phase: 0.2 },
+  { Icon: IconLemon2, left: 36, size: 24, color: "#BA7517", duration: 26, phase: 0.6 },
+  { Icon: IconApple, left: 62, size: 27, color: "#993C1D", duration: 23, phase: 0.4 },
+  { Icon: IconCherry, left: 84, size: 24, color: "#D4537E", duration: 28, phase: 0.75 },
+];
+
+// Leaves on the breeze: [top px, size px, color, duration s, phase 0–1]
+const BREEZE = [
+  { Icon: IconLeaf, top: 40, size: 24, color: "#3B6D11", duration: 30, phase: 0.2 },
+  { Icon: IconLeaf, top: 140, size: 18, color: "#639922", duration: 38, phase: 0.65 },
+  { Icon: IconSeeding, top: -20, size: 21, color: "#97C459", duration: 34, phase: 0.42 },
+];
+
+// Wheat and seedlings swaying on the hill line.
+const HILL_PLANTS = [
+  { Icon: IconWheat, left: "12%", size: 26, color: "#854F0B", duration: 6, delay: 0 },
+  { Icon: IconWheat, left: "19%", size: 20, color: "#BA7517", duration: 7, delay: -2 },
+  { Icon: IconPlant, left: "72%", size: 24, color: "#3B6D11", duration: 8, delay: -4 },
+  { Icon: IconWheat, left: "82%", size: 21, color: "#854F0B", duration: 6.5, delay: -1 },
 ];
 
 export default function Home() {
   return (
     <div className="relative overflow-hidden">
-      {/* Warm kitchen glow — the appetite comes from the color temperature. */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0"
-        style={{
-          background: [
-            "radial-gradient(52rem 30rem at 22% 4%, rgba(233, 116, 81, 0.22), transparent 65%)",
-            "radial-gradient(44rem 30rem at 82% 22%, rgba(240, 178, 76, 0.16), transparent 62%)",
-            "radial-gradient(50rem 36rem at 50% 108%, rgba(163, 88, 130, 0.20), transparent 68%)",
-          ].join(", "),
-        }}
-      />
-
-      {/* Food drifting in the background. */}
       <div aria-hidden className="pointer-events-none absolute inset-0 select-none">
-        {SCATTER.map(([left, top, size, tilt, drift, emoji], i) => (
-          <span
+        <IconSun
+          className="absolute right-10 top-8 opacity-45"
+          size={34}
+          stroke={1.5}
+          color="#EF9F27"
+        />
+        <IconCloud
+          className="absolute top-10"
+          size={36}
+          stroke={1.5}
+          color="#B4B2A9"
+          style={{ opacity: 0.3, animation: "farm-cloud 44s linear infinite", animationDelay: "-8s" }}
+        />
+        <IconCloud
+          className="absolute top-24"
+          size={24}
+          stroke={1.5}
+          color="#B4B2A9"
+          style={{ opacity: 0.22, animation: "farm-cloud 58s linear infinite", animationDelay: "-36s" }}
+        />
+
+        {FALLERS.map(({ Icon, left, size, color, duration, phase }, i) => (
+          <Icon
             key={i}
-            className="absolute opacity-25 saturate-[1.35]"
+            className="absolute"
+            size={size}
+            stroke={1.5}
+            color={color}
             style={{
               left: `${left}%`,
-              top: `${top}%`,
-              fontSize: `${size}rem`,
-              animation: `food-float ${drift}s ease-in-out infinite`,
-              animationDelay: `${(i % 7) * -1.7}s`,
-              ["--tilt" as string]: `${tilt}deg`,
-              filter: i % 3 === 0 ? "blur(1.5px)" : undefined,
+              opacity: 0.3,
+              animation: `farm-fall ${duration}s linear infinite`,
+              animationDelay: `${-phase * duration}s`,
             }}
-          >
-            {emoji}
-          </span>
+          />
+        ))}
+
+        {BREEZE.map(({ Icon, top, size, color, duration, phase }, i) => (
+          <Icon
+            key={i}
+            className="absolute left-0"
+            size={size}
+            stroke={1.5}
+            color={color}
+            style={{
+              top: `${top}px`,
+              opacity: 0.3,
+              animation: `farm-drift ${duration}s linear infinite`,
+              animationDelay: `${-phase * duration}s`,
+            }}
+          />
+        ))}
+
+        {/* Rolling hills anchor the bottom; wheat sways on the horizon. */}
+        <div
+          className="absolute rounded-[50%]"
+          style={{ bottom: "-11rem", left: "-12%", width: "70%", height: "18rem", background: "#97C459", opacity: 0.26 }}
+        />
+        <div
+          className="absolute rounded-[50%]"
+          style={{ bottom: "-13rem", right: "-15%", width: "82%", height: "19.5rem", background: "#639922", opacity: 0.2 }}
+        />
+        {HILL_PLANTS.map(({ Icon, left, size, color, duration, delay }, i) => (
+          <Icon
+            key={i}
+            className="absolute"
+            size={size}
+            stroke={1.5}
+            color={color}
+            style={{
+              left,
+              bottom: "3.5rem",
+              opacity: 0.45,
+              transformOrigin: "bottom center",
+              animation: `farm-sway ${duration}s ease-in-out infinite`,
+              animationDelay: `${delay}s`,
+            }}
+          />
         ))}
       </div>
 
@@ -66,10 +124,10 @@ export default function Home() {
         <span className="inline-flex items-center gap-2 rounded-full bg-pill px-4 py-1.5 text-sm text-pill-fg">
           🍳 Home cooking, shared
         </span>
-        <h1 className="mt-8 font-serif text-5xl font-semibold leading-tight [text-shadow:0_2px_24px_rgba(14,13,11,0.9)]">
+        <h1 className="mt-8 font-serif text-5xl font-semibold leading-tight">
           Recipes that <span className="text-accent">someone actually cooked.</span>
         </h1>
-        <p className="mx-auto mt-6 max-w-xl text-lg leading-relaxed text-muted [text-shadow:0_1px_12px_rgba(14,13,11,0.9)]">
+        <p className="mx-auto mt-6 max-w-xl text-lg leading-relaxed text-muted">
           Anyone can copy a recipe off the internet. This is for the ones you make
           on a weeknight — with the shortcuts, substitutions, and honest timings.
         </p>
@@ -82,13 +140,13 @@ export default function Home() {
           </Link>
           <Link
             href="/browse"
-            className="rounded-lg border border-border bg-background/60 px-6 py-3 font-medium backdrop-blur hover:border-muted"
+            className="rounded-lg border border-border bg-background/70 px-6 py-3 font-medium backdrop-blur hover:border-muted"
           >
             Browse recipes
           </Link>
           <Link
             href="/plan"
-            className="rounded-lg border border-border bg-background/60 px-6 py-3 font-medium backdrop-blur hover:border-muted"
+            className="rounded-lg border border-border bg-background/70 px-6 py-3 font-medium backdrop-blur hover:border-muted"
           >
             Plan your week
           </Link>
@@ -102,7 +160,7 @@ export default function Home() {
           ].map(([icon, title, blurb]) => (
             <div
               key={title}
-              className="rounded-2xl border border-border bg-card/80 p-5 backdrop-blur"
+              className="rounded-2xl border border-border bg-card/90 p-5 backdrop-blur"
             >
               <div className="text-2xl">{icon}</div>
               <div className="mt-2 font-serif text-lg font-semibold">{title}</div>

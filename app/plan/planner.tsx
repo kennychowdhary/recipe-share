@@ -187,7 +187,7 @@ export default function Planner({ recipes }: { recipes: Recipe[] }) {
                         return (
                           <div
                             key={`${value}-${i}`}
-                            className="group flex items-center gap-1.5 rounded-lg bg-background px-2 py-1 text-xs"
+                            className="group flex items-center gap-1.5 rounded-lg border border-border bg-background px-2 py-1 text-xs"
                             title={chip.label}
                           >
                             <span aria-hidden>{chip.icon}</span>

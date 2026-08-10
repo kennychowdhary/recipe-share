@@ -156,7 +156,7 @@ export default function SubmitPage() {
           />
 
           {parseError && (
-            <p className="mt-4 rounded-lg border border-red-900 bg-red-950/40 p-3 text-sm text-red-300">
+            <p className="mt-4 rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-700">
               {parseError}
             </p>
           )}
@@ -537,7 +537,7 @@ export default function SubmitPage() {
               </div>
             </div>
             {error && (
-              <p className="mt-4 rounded-lg border border-red-900 bg-red-950/40 p-3 text-sm text-red-300">
+              <p className="mt-4 rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-700">
                 {error}
               </p>
             )}
