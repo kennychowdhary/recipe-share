@@ -69,7 +69,27 @@ Write steps as one action each, in order, without step numbers or bullet markers
 
 Apply a dietary tag only when the ingredient list clearly supports it — no meat, fish, or dairy for Vegan; no wheat, barley, or rye for Gluten-free.
 
-When the input is a recipe web page (structured data plus page text), take names, amounts, and steps from the structured data — every ingredient must keep its amount. Use the page text for what the structured data misses: headnote tips, substitutions, variations, and author edits or reader-tested tweaks belong in notes. Ignore navigation, ads, comments, and unrelated links.`;
+When the input is a recipe web page (structured data plus page text), take names, amounts, and steps from the structured data — every ingredient must keep its amount. Use the page text for what the structured data misses: headnote tips, substitutions, variations, and author edits or reader-tested tweaks belong in notes. Ignore navigation, ads, comments, and unrelated links.
+
+When the input includes images (cookbook pages, screenshots, handwritten cards), transcribe them faithfully — every ingredient keeps its amount exactly as written. Multiple images are parts of one recipe (e.g. an ingredients page and a steps page) unless they clearly are not; handwriting you can't read becomes a note like "one ingredient was illegible", never a guess.`;
+
+const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"] as const;
+type ImageInput = { media_type: (typeof IMAGE_TYPES)[number]; data: string };
+
+function validImages(images: unknown): images is ImageInput[] {
+  return (
+    Array.isArray(images) &&
+    images.length <= 4 &&
+    images.every(
+      (img) =>
+        img &&
+        IMAGE_TYPES.includes(img.media_type) &&
+        typeof img.data === "string" &&
+        img.data.length > 0 &&
+        img.data.length < 5_000_000, // ~3.7MB decoded, under the API's 5MB/image cap
+    )
+  );
+}
 
 /** Pull <script type="application/ld+json"> Recipe objects — the structured
  * data most recipe sites embed for search engines. Far more reliable than
@@ -197,16 +217,24 @@ export async function POST(request: Request) {
   }
 
   let text: string;
+  let images: unknown;
   try {
-    ({ text } = await request.json());
+    ({ text, images } = await request.json());
   } catch {
     return Response.json({ error: "Invalid JSON body." }, { status: 400 });
   }
 
-  if (!text?.trim()) {
-    return Response.json({ error: "Paste a recipe first." }, { status: 400 });
+  const hasImages = Array.isArray(images) && images.length > 0;
+  if (hasImages && !validImages(images)) {
+    return Response.json(
+      { error: "Photos must be JPEG, PNG, WebP, or GIF — up to 4, a few MB each." },
+      { status: 400 },
+    );
   }
-  if (text.length > 20000) {
+  if (!text?.trim() && !hasImages) {
+    return Response.json({ error: "Paste a recipe or add a photo first." }, { status: 400 });
+  }
+  if (text && text.length > 20000) {
     return Response.json(
       { error: "That recipe is too long — trim it to under 20,000 characters." },
       { status: 400 },
@@ -214,7 +242,7 @@ export async function POST(request: Request) {
   }
 
   // A bare link means "go get it" — fetch the page and parse that instead.
-  if (looksLikeUrl(text)) {
+  if (!hasImages && text && looksLikeUrl(text)) {
     try {
       text = await fetchRecipeFromUrl(text.trim());
     } catch (error) {
@@ -224,6 +252,21 @@ export async function POST(request: Request) {
       );
     }
   }
+
+  const userContent: Anthropic.ContentBlockParam[] = [
+    ...(hasImages
+      ? (images as ImageInput[]).map(
+          (img): Anthropic.ImageBlockParam => ({
+            type: "image",
+            source: { type: "base64", media_type: img.media_type, data: img.data },
+          }),
+        )
+      : []),
+    {
+      type: "text",
+      text: text?.trim() || "Extract the recipe from the image(s).",
+    },
+  ];
 
   const client = new Anthropic();
 
@@ -245,7 +288,7 @@ export async function POST(request: Request) {
       ],
       tool_choice: { type: "tool", name: "save_recipe" },
       system: SYSTEM_PROMPT,
-      messages: [{ role: "user", content: text }],
+      messages: [{ role: "user", content: userContent }],
     });
 
     if (message.stop_reason === "refusal") {

@@ -3,7 +3,9 @@ import { notFound } from "next/navigation";
 import { getSupabase } from "@/lib/supabase";
 import { courseLabel, type Recipe } from "@/lib/types";
 
-export const dynamic = "force-dynamic";
+// Recipes barely change once published; a fresh id renders on demand, so a
+// just-published recipe still shows instantly after the redirect.
+export const revalidate = 300;
 
 export default async function RecipePage({
   params,

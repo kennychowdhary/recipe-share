@@ -2,7 +2,9 @@ import { getSupabase } from "@/lib/supabase";
 import type { Recipe } from "@/lib/types";
 import RecipeGrid from "./grid";
 
-export const dynamic = "force-dynamic";
+// Serve cached instantly, refresh in the background — navigation feels
+// immediate and a new recipe shows up here within 30s of publishing.
+export const revalidate = 30;
 
 export default async function BrowsePage() {
   const supabase = getSupabase();

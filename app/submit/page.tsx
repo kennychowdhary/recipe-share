@@ -30,6 +30,7 @@ export default function SubmitPage() {
 
   const [showPaste, setShowPaste] = useState(true);
   const [pastedText, setPastedText] = useState("");
+  const [photos, setPhotos] = useState<{ data: string; preview: string; name: string }[]>([]);
   const [parsing, setParsing] = useState(false);
   const [parseError, setParseError] = useState<string | null>(null);
 
@@ -60,13 +61,40 @@ export default function SubmitPage() {
     true,
   ][step];
 
+  /** Shrink to ≤1600px and re-encode as JPEG so phone photos (and HEIC on
+   * iPhones, which the canvas converts) stay well under the API size cap. */
+  async function addPhotos(files: FileList | null) {
+    if (!files) return;
+    setParseError(null);
+    for (const file of Array.from(files).slice(0, 4 - photos.length)) {
+      try {
+        const bitmap = await createImageBitmap(file);
+        const scale = Math.min(1, 1600 / Math.max(bitmap.width, bitmap.height));
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.round(bitmap.width * scale);
+        canvas.height = Math.round(bitmap.height * scale);
+        canvas.getContext("2d")!.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+        const dataUrl = canvas.toDataURL("image/jpeg", 0.8);
+        setPhotos((prev) => [
+          ...prev,
+          { data: dataUrl.split(",")[1], preview: dataUrl, name: file.name },
+        ]);
+      } catch {
+        setParseError(`Couldn't read ${file.name} — try a JPEG or PNG.`);
+      }
+    }
+  }
+
   async function parsePasted() {
     setParsing(true);
     setParseError(null);
     const res = await fetch("/api/parse-recipe", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text: pastedText }),
+      body: JSON.stringify({
+        text: pastedText,
+        images: photos.map((p) => ({ media_type: "image/jpeg", data: p.data })),
+      }),
     });
     if (!res.ok) {
       const body = await res.json().catch(() => null);
@@ -137,13 +165,12 @@ export default function SubmitPage() {
             ✨ Skip the typing
           </span>
           <h1 className="mt-4 font-serif text-3xl font-semibold">
-            Paste your recipe — or a link to one
+            Paste your recipe — or a link, or a photo
           </h1>
           <p className="mt-2 text-muted">
-            However it&apos;s written — a text from a friend, scrawled notes,
-            or a URL from your favorite recipe site. We&apos;ll fetch it, sort
-            it into ingredients and steps, and you can fix anything we get
-            wrong.
+            However it exists — a text from a friend, a URL, a photo of a
+            cookbook page or grandma&apos;s handwriting. We&apos;ll sort it
+            into ingredients and steps, and you can fix anything we get wrong.
           </p>
 
           <textarea
@@ -154,6 +181,40 @@ export default function SubmitPage() {
             value={pastedText}
             onChange={(e) => setPastedText(e.target.value)}
           />
+
+          <div className="mt-4 flex flex-wrap items-center gap-3">
+            <label className="cursor-pointer rounded-lg border border-border px-4 py-2 text-sm text-muted hover:border-muted hover:text-foreground">
+              📷 Add photos
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={(e) => {
+                  addPhotos(e.target.files);
+                  e.target.value = "";
+                }}
+              />
+            </label>
+            {photos.map((photo, i) => (
+              <div key={i} className="relative">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={photo.preview}
+                  alt={photo.name}
+                  className="h-14 w-14 rounded-lg border border-border object-cover"
+                />
+                <button
+                  type="button"
+                  aria-label={`Remove ${photo.name}`}
+                  onClick={() => setPhotos((prev) => prev.filter((_, idx) => idx !== i))}
+                  className="absolute -right-2 -top-2 grid h-5 w-5 place-items-center rounded-full border border-border bg-background text-xs text-muted hover:text-foreground"
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
 
           {parseError && (
             <p className="mt-4 rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-700">
@@ -172,7 +233,7 @@ export default function SubmitPage() {
             <button
               type="button"
               onClick={parsePasted}
-              disabled={parsing || !pastedText.trim()}
+              disabled={parsing || (!pastedText.trim() && photos.length === 0)}
               className="inline-flex items-center gap-2.5 rounded-lg bg-accent px-5 py-2.5 text-sm font-medium text-background hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-70"
             >
               {parsing && (

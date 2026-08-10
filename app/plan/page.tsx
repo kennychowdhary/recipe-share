@@ -2,7 +2,7 @@ import { getSupabase } from "@/lib/supabase";
 import type { Recipe } from "@/lib/types";
 import Planner from "./planner";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 30;
 
 export default async function PlanPage() {
   const supabase = getSupabase();
