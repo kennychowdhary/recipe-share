@@ -63,7 +63,7 @@ const SYSTEM_PROMPT = `You convert free-form recipe text into structured data.
 
 Extract only what the text actually says. Do not invent ingredients, steps, times, or tags that aren't supported by the text — an empty string or 0 is the correct answer when something isn't stated. Infer servings only when the text implies it; otherwise use 4.
 
-Split ingredient lines into quantity, unit, and name: "2 tbsp olive oil" becomes quantity "2", unit "tbsp", name "olive oil". Keep prep notes with the name ("1 onion, finely diced" → name "onion, finely diced"). For ingredients with no measurement, leave quantity and unit empty. When the amount is open-ended or descriptive ("four or more", "a few sprigs", "to taste"), leave quantity empty and keep that wording in the name — never state the amount twice.
+Split ingredient lines into quantity, unit, and name: "2 tbsp olive oil" becomes quantity "2", unit "tbsp", name "olive oil". Keep prep notes with the name ("1 onion, finely diced" → name "onion, finely diced"). For ingredients with no measurement, leave quantity and unit empty.
 
 Write steps as one action each, in order, without step numbers or bullet markers.
 
